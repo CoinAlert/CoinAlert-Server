@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	//	"gopkg.in/mgo.v2"
 )
 
 const version = "0.0.1"
@@ -15,7 +16,9 @@ const templateDir = "templates/*"
 var templates = template.Must(template.ParseGlob(templateDir))
 
 func main() {
-	//	http.HandleFunc("/api/register", registerHandler) // To handle all new application loads
+	fmt.Printf("Starting CoinAlert version %s", version)
+
+	http.HandleFunc("/api/register", registerHandler) // To handle all new application loads
 
 	http.HandleFunc("/", HomeHandler)              // Display landing page... eventually.
 	http.HandleFunc("/resources/", includeHandler) // Loads css/js/etc. straight through.
