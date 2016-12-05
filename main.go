@@ -29,8 +29,6 @@ func main() {
 	log.Fatal(srv.ListenAndServe())
 }
 
-// TODO: Check for those already logged in and forward to /admin
-// Loads the login page.
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("%q\n", r)
 	err := templates.ExecuteTemplate(w, "main", nil)
