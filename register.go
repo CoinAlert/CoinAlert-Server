@@ -41,6 +41,11 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if d.Id == "" {
+		http.Error(w, ErrMissingId.Error(), http.StatusBadRequest)
+		return
+	}
+
 	err = SaveDevice(d)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
