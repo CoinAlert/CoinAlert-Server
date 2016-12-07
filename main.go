@@ -91,7 +91,3 @@ func currentPriceHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "%s", buf)
 }
-
-func CurrentPrice() (string, error) {
-	return "$1337", nil
-}
