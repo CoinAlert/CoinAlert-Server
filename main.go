@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+	"gopkg.in/mgo.v2"
 	"html/template"
 	"log"
 	"net/http"
 	"time"
-	//	"gopkg.in/mgo.v2"
 )
 
 const version = "0.0.1"
@@ -14,9 +14,22 @@ const templateDir = "templates/*"
 
 // Must be able to compile all template files.
 var templates = template.Must(template.ParseGlob(templateDir))
+var url = "localhost"
+var database = "coinalert"
+var collection = "devices"
+
+var db *mgo.Collection
 
 func main() {
-	fmt.Printf("Starting CoinAlert version %s", version)
+	fmt.Printf("Starting CoinAlert version %s\n", version)
+
+	session, err := mgo.Dial(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db = session.DB(database).C(collection)
+	fmt.Printf("Connected to MongoDB\n")
 
 	http.HandleFunc("/api/register", registerHandler) // To handle all new application loads
 
