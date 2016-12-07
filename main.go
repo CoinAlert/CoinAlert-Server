@@ -43,6 +43,7 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("Initial price for BTC: %s\n", price.Current)
+	defer priceUpdate()
 
 	http.HandleFunc("/api/register", registerHandler)    // To handle all new application loads
 	http.HandleFunc("/api/current", currentPriceHandler) // Returns current price of BTC in USA$
@@ -90,4 +91,24 @@ func currentPriceHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "%s", buf)
+}
+
+func priceUpdate() {
+	tick := time.After(5 * time.Second)
+
+	// Keep trying until we're timed out or got a result or got an error
+	for {
+		select {
+		// Got a timeout! fail with a timeout error
+		case <-tick:
+			p, err := CurrentPrice()
+			if err != nil {
+				fmt.Printf("Error getting current price: %s\n", err.Error())
+
+			} else {
+				price.Current = p
+				fmt.Printf("Price updated to $%s\n", p)
+			}
+		}
+	}
 }
