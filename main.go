@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"gopkg.in/mgo.v2"
 	"html/template"
@@ -20,6 +21,12 @@ var collection = "devices"
 
 var db *mgo.Collection
 
+type Price struct {
+	Current string `json:"currentPrice"`
+}
+
+var price Price
+
 func main() {
 	fmt.Printf("Starting CoinAlert version %s\n", version)
 
@@ -31,7 +38,14 @@ func main() {
 	db = session.DB(database).C(collection)
 	fmt.Printf("Connected to MongoDB\n")
 
-	http.HandleFunc("/api/register", registerHandler) // To handle all new application loads
+	price.Current, err = CurrentPrice()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Initial price for BTC: %s\n", price.Current)
+
+	http.HandleFunc("/api/register", registerHandler)    // To handle all new application loads
+	http.HandleFunc("/api/current", currentPriceHandler) // Returns current price of BTC in USA$
 
 	http.HandleFunc("/", HomeHandler)              // Display landing page... eventually.
 	http.HandleFunc("/resources/", includeHandler) // Loads css/js/etc. straight through.
@@ -47,7 +61,7 @@ func main() {
 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("%q\n", r)
-	err := templates.ExecuteTemplate(w, "main", nil)
+	err := templates.ExecuteTemplate(w, "main", price)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -59,4 +73,25 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 func includeHandler(w http.ResponseWriter, r *http.Request) {
 	filename := r.URL.Path[1:]
 	http.ServeFile(w, r, filename)
+}
+
+func currentPriceHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		w.Header().Add("Allowed", "GET")
+		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	buf, err := json.Marshal(price)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "%s", buf)
+}
+
+func CurrentPrice() (string, error) {
+	return "$1337", nil
 }
