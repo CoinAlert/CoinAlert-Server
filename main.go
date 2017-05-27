@@ -46,15 +46,18 @@ func main() {
 	fmt.Printf("Initial price for BTC: %s\n", price.Current)
 	go priceUpdate()
 
+	// API Routes
 	http.HandleFunc("/api/register", registerHandler)    // To handle all new application loads
-	http.HandleFunc("/api/current", currentPriceHandler) // Returns current price of BTC in USA$
+	http.HandleFunc("/api/current", currentPriceHandler) // Returns current price of BTC in USD
 
+	// Web Routes
 	http.HandleFunc("/", HomeHandler)              // Display landing page... eventually.
 	http.HandleFunc("/resources/", includeHandler) // Loads css/js/etc. straight through.
 
 	srv := &http.Server{
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
+		Addr:         ":8080",
 	}
 
 	//	log.Fatal(srv.ListenAndServeTLS("cert.pem", "key.pem"))

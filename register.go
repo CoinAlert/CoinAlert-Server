@@ -16,7 +16,7 @@ type Device struct {
 	Model      string
 }
 
-// Register's an application with the server and/or updates the necessary
+// Registers an application with the server and/or updates the necessary
 // records related to the user and device like push token.
 func registerHandler(w http.ResponseWriter, r *http.Request) {
 	// Require JSON content type.
