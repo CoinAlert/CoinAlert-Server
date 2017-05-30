@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 )
 
-func TestRegister(t *testing.T) {
+func TestGetRegister(t *testing.T) {
 	server := "http://localhost:8080"
 	url := server + "/api/register"
 
@@ -43,4 +44,30 @@ func TestPostRegister(t *testing.T) {
 		t.Errorf("POST /register should return %d, got %d\n", http.StatusOK, r.StatusCode)
 	}
 
+}
+func TestGetPrice(t *testing.T) {
+	server := "http://localhost:8080"
+	path := "/api/current"
+	url := server + path
+
+	r, err := http.Get(url)
+	if err != nil {
+		t.Errorf("Error on %s GET: %#v\n", path, err)
+	}
+	if r.StatusCode != http.StatusOK {
+		t.Errorf("POST %s should return %d, got %d\n", path, http.StatusOK, r.StatusCode)
+	}
+}
+
+func TestPostPrice(t *testing.T) {
+	server := "http://localhost:8080"
+	url := server + "/api/current"
+
+	r, err := http.Post(url, "", strings.NewReader(""))
+	if err != nil {
+		t.Errorf("Error on /current POST: %#v\n", err)
+	}
+	if r.StatusCode != http.StatusMethodNotAllowed {
+		t.Errorf("POST /current should return %d, got %d\n", http.StatusMethodNotAllowed, r.StatusCode)
+	}
 }

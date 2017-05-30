@@ -47,10 +47,11 @@ func main() {
 	go priceUpdate()
 
 	register := http.HandlerFunc(registerHandler)
+	currentPrice := http.HandlerFunc(currentPriceHandler)
 
 	// API Routes
-	http.Handle("/api/register", PostHandler(register))  // To handle all new application loads
-	http.HandleFunc("/api/current", currentPriceHandler) // Returns current price of BTC in USD
+	http.Handle("/api/register", PostHandler(register))   // To handle all new application loads
+	http.Handle("/api/current", GetHandler(currentPrice)) // Returns current price of BTC in USD
 
 	// Web Routes
 	http.HandleFunc("/", HomeHandler)              // Display landing page... eventually.
@@ -74,6 +75,15 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+func GetHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			http.Error(w, ErrMethodNotAllowed.Error(), http.StatusMethodNotAllowed)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
 
 func PostHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -93,12 +103,6 @@ func includeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func currentPriceHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
-		w.Header().Add("Allowed", "GET")
-		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
-		return
-	}
-
 	buf, err := json.Marshal(price)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
