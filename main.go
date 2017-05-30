@@ -46,8 +46,10 @@ func main() {
 	fmt.Printf("Initial price for BTC: %s\n", price.Current)
 	go priceUpdate()
 
+	register := http.HandlerFunc(registerHandler)
+
 	// API Routes
-	http.HandleFunc("/api/register", registerHandler)    // To handle all new application loads
+	http.Handle("/api/register", PostHandler(register))  // To handle all new application loads
 	http.HandleFunc("/api/current", currentPriceHandler) // Returns current price of BTC in USD
 
 	// Web Routes
@@ -71,6 +73,16 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 
+}
+
+func PostHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, ErrMethodNotAllowed.Error(), http.StatusMethodNotAllowed)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // For resource files like js, images, etc.
