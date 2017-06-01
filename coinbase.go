@@ -19,7 +19,7 @@ type PriceResponse struct {
 func CurrentPrice() (string, error) {
 	resp, err := http.Get(spotPriceAPI)
 	if err != nil {
-		return price.Current, err
+		return "", err
 	}
 	defer resp.Body.Close()
 
@@ -27,12 +27,12 @@ func CurrentPrice() (string, error) {
 
 	buf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return price.Current, err
+		return "", err
 	}
 
 	err = json.Unmarshal(buf, &latest)
 	if err != nil {
-		return price.Current, err
+		return "", err
 	}
 
 	return latest.Data.Amount, nil

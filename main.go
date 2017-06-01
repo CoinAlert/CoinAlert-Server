@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"gopkg.in/mgo.v2"
 	"html/template"
@@ -14,18 +13,10 @@ const version = "0.0.1"
 const templateDir = "templates/*"
 
 // Must be able to compile all template files.
-var templates = template.Must(template.ParseGlob(templateDir))
-var url = "localhost"
-var database = "coinalert"
-var collection = "devices"
-
-var db *mgo.Collection
-
-type Price struct {
-	Current string `json:"currentPrice"`
-}
-
-var price Price
+const url = "localhost"
+const database = "coinalert"
+const devices_collection = "devices"
+const alerts_collection = "alerts"
 
 func main() {
 	fmt.Printf("Starting CoinAlert version %s\n", version)
@@ -34,28 +25,29 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	db = session.DB(database).C(collection)
 	fmt.Printf("Connected to MongoDB\n")
 
+	price := &Price{}
 	price.Current, err = CurrentPrice()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Printf("Initial price for BTC: %s\n", price.Current)
-	go priceUpdate()
+	go priceUpdate(price)
 
-	register := http.HandlerFunc(registerHandler)
-	currentPrice := http.HandlerFunc(currentPriceHandler)
+	register := http.HandlerFunc(registerHandler(session))
+	currentPrice := http.HandlerFunc(currentPriceHandler(price))
 
 	// API Routes
 	http.Handle("/api/register", PostHandler(register))   // To handle all new application loads
 	http.Handle("/api/current", GetHandler(currentPrice)) // Returns current price of BTC in USD
 
+	var templates = template.Must(template.ParseGlob(templateDir))
+
 	// Web Routes
-	http.HandleFunc("/", HomeHandler)              // Display landing page... eventually.
-	http.HandleFunc("/resources/", includeHandler) // Loads css/js/etc. straight through.
+	http.HandleFunc("/", HomeHandler(price, templates)) // Display landing page... eventually.
+	http.HandleFunc("/resources/", includeHandler)      // Loads css/js/etc. straight through.
 
 	srv := &http.Server{
 		ReadTimeout:  5 * time.Second,
@@ -67,32 +59,17 @@ func main() {
 	log.Fatal(srv.ListenAndServe())
 }
 
-func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("%q\n", r)
-	err := templates.ExecuteTemplate(w, "main", price)
-	if err != nil {
-		log.Fatal(err)
+// Return the home page.
+func HomeHandler(price *Price, templates *template.Template) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Printf("%q\n", r)
+		err := templates.ExecuteTemplate(w, "main", price)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
 	}
 
-}
-func GetHandler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			http.Error(w, ErrMethodNotAllowed.Error(), http.StatusMethodNotAllowed)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-func PostHandler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
-			http.Error(w, ErrMethodNotAllowed.Error(), http.StatusMethodNotAllowed)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
 }
 
 // For resource files like js, images, etc.
@@ -102,18 +79,7 @@ func includeHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filename)
 }
 
-func currentPriceHandler(w http.ResponseWriter, r *http.Request) {
-	buf, err := json.Marshal(price)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "%s", buf)
-}
-
-func priceUpdate() {
+func priceUpdate(price *Price) {
 	ticker := time.NewTicker(5 * time.Second)
 
 	// Keep trying until we're timed out or got a result or got an error
