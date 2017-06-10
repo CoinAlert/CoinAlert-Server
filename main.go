@@ -38,10 +38,12 @@ func main() {
 
 	register := http.HandlerFunc(registerHandler(session))
 	currentPrice := http.HandlerFunc(currentPriceHandler(price))
+	alexa := http.HandlerFunc(alexaHandler(price))
 
 	// API Routes
 	http.Handle("/api/register", PostHandler(register))   // To handle all new application loads
 	http.Handle("/api/current", GetHandler(currentPrice)) // Returns current price of BTC in USD
+	http.Handle("/api/alexa", GetHandler(alexa))          // Returns current price of BTC in USD
 
 	var templates = template.Must(template.ParseGlob(templateDir))
 
